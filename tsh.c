@@ -181,27 +181,44 @@ int main(int argc, char **argv) {
  * when we type ctrl-c (ctrl-z) at the keyboard.
 */
 void eval(char *cmdline) {
-  printf("eval: %s\n", cmdline);
-  /*
+  //printf("eval: %s\n", cmdline);
   char *argv[MAXARGS];
   char buf[MAXLINE];
   int bg;
   pid_t pid;
 
-  strcpy(buf, cmdline)
-  if(!strcmp(argv[0],"quit"))
-    exit(0);
-    printf("quit.");
-  
-  if(strcmp(argv[0], "&"))
-    return bg;
-  if (!strcmp(argv[0], "&"))
-    return !bg;
-  
-  if(strcmp(argv[0], "jobs"))
-    listjobs(jobs);
-    printf("jobs.");
-    */
+  strcpy(buf, cmdline);
+  bg = parseline(buf, argv);
+  if (argv[0] == NULL){
+    return;
+  }
+
+  if (!builtin_cmd(argv))
+  {
+    if ((pid = fork()) == 0)
+    {
+      if (execve(argv[0], argv, environ) < 0)
+      {
+        printf("%s: Command not found.\n", argv[0]);
+        exit(0);
+      } 
+    }
+    if (bg)
+    {
+      addjob(jobs, pid, BG, cmdline);
+    } else {
+      addjob(jobs, pid, FG, cmdline);
+    }
+
+    if(!bg){
+      int status;
+      if(waitpid(pid, &status, 0) < 0)
+        unix_error("waitfg: waitpid error");
+    }
+    else
+      printf("%d %s\n", pid, cmdline);
+  }
+
   return;
 }
 
@@ -264,18 +281,22 @@ int parseline(const char *cmdline, char **argv) {
  *    it immediately.
  */
 int builtin_cmd(char **argv) {
-  if(!strcmp(argv[0],"quit"))
+  //printf("builtin_cmd: %s\n", argv[0]);
+  if(!strcmp(argv[0],"quit")) {
+    //printf("quit.");
     exit(0);
-    printf("quit.");
+  }
   /*
   if(strcmp(argv[0], "&"))
     return bg;
   if (!strcmp(argv[0], "&"))
     return !bg;
   */
-  if(strcmp(argv[0], "jobs"))
+  if(!strcmp(argv[0], "jobs")) {
+    //printf("jobs.");
     listjobs(jobs);
-    printf("jobs.");
+    return 1;
+  }
   return 0;     /* not a builtin command */
 }
 
@@ -305,6 +326,7 @@ void waitfg(pid_t pid) {
  *     currently running children to terminate.
  */
 void sigchld_handler(int sig) {
+  deletejob(jobs, pid);
   return;
 }
 
@@ -314,6 +336,7 @@ void sigchld_handler(int sig) {
  *    to the foreground job.
  */
 void sigint_handler(int sig) {
+  exit(0);
   return;
 }
 
