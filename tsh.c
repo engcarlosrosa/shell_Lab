@@ -326,8 +326,20 @@ void waitfg(pid_t pid) {
  *     currently running children to terminate.
  */
 void sigchld_handler(int sig) {
-  deletejob(jobs, pid);
-  return;
+	int status;
+	pid_t pid;
+
+	while ((pid = waitpid(-1, &status, WNOHANG | WUTRACED)) > 0) {
+		if (WIFIEXITED(status)) {
+			deletejob(jobs, pid);
+		}
+		else if (WIFSTOPPED(status)) {
+			getjobpid(jobs,pid)->state = ST;
+			printf("Processo suspenso: %d\n", pid);
+		}
+	}
+  
+	return;
 }
 
 /*
@@ -336,7 +348,11 @@ void sigchld_handler(int sig) {
  *    to the foreground job.
  */
 void sigint_handler(int sig) {
-  exit(0);
+	pid_t pid = fgpid(jobs);
+	if (pid != 0){
+		kill(-pid,sig);
+	}
+  
   return;
 }
 
@@ -346,6 +362,11 @@ void sigint_handler(int sig) {
  *     foreground job by sending it a SIGTSTP.
  */
 void sigtstp_handler(int sig) {
+	pid_t pid = fgpid(jobs);
+	if(pid!=0){
+		kill(-pid,sig);
+
+	}
   return;
 }
 
