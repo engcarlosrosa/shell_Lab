@@ -304,14 +304,58 @@ int builtin_cmd(char **argv) {
  * do_bgfg - Execute the builtin bg and fg commands
  */
 void do_bgfg(char **argv) {
-  return;
+	struct job_t *job;
+	int jid;
+	pid_t pid;
+
+
+
+	if(argv[1]==NULL){
+		printf("segundo argumento faltando");
+		return;
+	}
+	//checa se é jid e pega ele
+	if(argv[1][0]=='%'){
+		jid = atoi(&argv[1][1]);
+		job = getjobjid(jobs,jid)
+		if (job == NULL){
+			printf("job não existe");
+			return;
+		}	
+
+	}
+	//checa se é pid e pega ele
+	else if(isdigit(argv[1][0])){
+		pid = atoi(&argv[1][1]);
+		job = getjobpid(jobs,pid);
+		if (job == NULL){
+			printf("processo não existe");
+			return;
+		}
+
+	}
+	else {
+		printf("entrada errada");
+		return;
+	}
+	if(!strcmp("fg", argv[0])) {
+		job->state = FG;
+		waitfg(job->pid);
+	} 
+	else if(!strcmp("bg", argv[0])) {
+		job->state = BG;
+	} 
+  	return;
 }
 
 /*
  * waitfg - Block until process pid is no longer the foreground process
  */
 void waitfg(pid_t pid) {
-  return;
+	while(pid == fgpid(jobs)){
+		sleep(0);
+	}
+  	return;
 }
 
 /*****************
